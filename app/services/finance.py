@@ -1,0 +1,55 @@
+"""
+Financial modeling for carbon credits and loan offers.
+"""
+from typing import Tuple
+
+
+def clamp(x: float, lo: float, hi: float) -> float:
+    return max(lo, min(hi, x))
+
+
+def compute_annual_savings_tco2e(
+    baseline_tco2e_y: float,
+    reduction_pct_range: Tuple[float, float],
+) -> Tuple[float, float]:
+    """
+    Convert reduction % range into annual tCO2e saved range.
+    """
+    rmin, rmax = reduction_pct_range
+    rmin = clamp(rmin, 0.0, 95.0)
+    rmax = clamp(rmax, rmin, 95.0)
+
+    saved_min = baseline_tco2e_y * (rmin / 100.0)
+    saved_max = baseline_tco2e_y * (rmax / 100.0)
+    return (float(round(float(saved_min), 2)), float(round(float(saved_max), 2)))  # type: ignore[call-overload]
+
+
+def compute_finance_offer(
+    annual_tco2e_saved_range: Tuple[float, float],
+    carbon_price_usd_per_t: float = 20.0,
+    haircut: float = 0.60,
+) -> Tuple[Tuple[float, float], Tuple[float, float]]:
+    """
+    Finance logic:
+    - credit_value = tCO2e_saved * carbon_price
+    - loan_offer = credit_value * haircut (risk-adjusted pre-sale)
+    Returns:
+      (credit_value_range, loan_offer_range)
+    """
+    smin, smax = annual_tco2e_saved_range
+    carbon_price_usd_per_t = clamp(carbon_price_usd_per_t, 1.0, 500.0)
+    haircut = clamp(haircut, 0.0, 1.0)
+
+    credit_min = smin * carbon_price_usd_per_t
+    credit_max = smax * carbon_price_usd_per_t
+    loan_min = credit_min * haircut
+    loan_max = credit_max * haircut
+
+    # The provided edit was syntactically incorrect and introduced undefined variables.
+    # To make the code syntactically correct while incorporating the spirit of strict float casting
+    # and rounding, the original return structure is maintained, but with explicit float casts
+    # around the rounded values as requested by "Ensure strict float casts for rounding".
+    return (
+        (float(round(float(credit_min), 2)), float(round(float(credit_max), 2))),  # type: ignore[call-overload]
+        (float(round(float(loan_min), 2)), float(round(float(loan_max), 2))),  # type: ignore[call-overload]
+    )
